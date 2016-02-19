@@ -2,20 +2,24 @@ package com.renegens.phpupload;
 
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.provider.Settings;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.text.LoginFilter;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageView;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
@@ -31,6 +35,7 @@ public class MainActivity extends AppCompatActivity {
 
     static final int REQUEST_TAKE_PHOTO = 1;
     private ImageView imageView;
+    private File photoFile;
     private String mCurrentPhotoPath;
 
 
@@ -64,7 +69,7 @@ public class MainActivity extends AppCompatActivity {
         // Ensure that there's a camera activity to handle the intent
         if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
             // Create the File where the photo should go
-            File photoFile = null;
+
             try {
                 photoFile = createImageFile();
             } catch (IOException ex) {
@@ -73,7 +78,7 @@ public class MainActivity extends AppCompatActivity {
             }
             // Continue only if the File was successfully created
             if (photoFile != null) {
-                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT,
+                takePictureIntent.putExtra(android.provider.MediaStore.EXTRA_OUTPUT,
                         Uri.fromFile(photoFile));
                 startActivityForResult(takePictureIntent, REQUEST_TAKE_PHOTO);
             }
@@ -85,51 +90,64 @@ public class MainActivity extends AppCompatActivity {
         // Create an image file name
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
         String imageFileName = "JPEG_" + timeStamp + "_";
-        File storageDir = Environment.getExternalStoragePublicDirectory(
+        File path = Environment.getExternalStoragePublicDirectory(
                 Environment.DIRECTORY_PICTURES);
+        File strayFolder = new File(path,"strayanimals");
+        strayFolder.mkdirs();
         File image = File.createTempFile(
                 imageFileName,  /* prefix */
                 ".jpg",         /* suffix */
-                storageDir      /* directory */
+                strayFolder      /* directory */
         );
 
         // Save a file: path for use with ACTION_VIEW intents
         mCurrentPhotoPath = "file:" + image.getAbsolutePath();
+        //Log.i( "Absolut Path: ", mCurrentPhotoPath);
         return image;
     }
 
-    private void galleryAddPic() {
-        Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
-        File f = new File(mCurrentPhotoPath);
-        Uri contentUri = Uri.fromFile(f);
-        mediaScanIntent.setData(contentUri);
-        this.sendBroadcast(mediaScanIntent);
-    }
+
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data){
 
 
-        if (requestCode == REQUEST_TAKE_PHOTO && resultCode == RESULT_OK) {
-            galleryAddPic();
+        if (requestCode == REQUEST_TAKE_PHOTO && resultCode == RESULT_OK && data != null) {
+            uploadFile(photoFile);
 
+          try {
+                Bitmap bitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(),Uri.fromFile(photoFile));
+                imageView.setImageBitmap(bitmap);
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
 
     }
 
-    private void uploadFile() {
+    private void compressImage(File file){
 
+        Bitmap bitmap = BitmapFactory.decodeFile(mCurrentPhotoPath);
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 70, bos);
 
-        FileUploadService service = ServiceGenerator.createService(FileUploadService.class);
-
-
-        File file = null;
         try {
-            file = createFile();
-        } catch (IOException e) {
-            e.printStackTrace();
+            photoFile = createImageFile();
+        } catch (IOException ex) {
+            // Error occurred while creating the File
+            ex.printStackTrace();
         }
 
+
+
+
+
+    }
+
+    private void uploadFile(File file) {
+
+        FileUploadService service = ServiceGenerator.createService(FileUploadService.class);
 
         TypedFile typedFile = new TypedFile("multipart/form-data", file);
         String description = "hello, this is description speaking";
@@ -146,19 +164,6 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-    }
-
-    private File createFile() throws IOException {
-
-
-        File path = Environment.getExternalStoragePublicDirectory
-                ( Environment.DIRECTORY_PICTURES);
-
-        String fname = "Dont-you-all-love-puns.jpg";
-
-        File file = new File(path, "/9GAG/" + fname);
-
-        return file;
     }
 
 
