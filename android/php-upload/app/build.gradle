@@ -7,7 +7,7 @@ android {
     defaultConfig {
         applicationId "com.renegens.phpupload"
         minSdkVersion 15
-        targetSdkVersion 21
+        targetSdkVersion 23
         versionCode 1
         versionName "1.0"
     }
@@ -31,4 +31,5 @@ dependencies {
     // Retrofit & OkHttp
     compile 'com.squareup.retrofit:retrofit:1.9.0'
     compile 'com.squareup.okhttp:okhttp:2.7.2'
+    compile 'com.github.boxme:squarecamera:1.1.0'
 }
