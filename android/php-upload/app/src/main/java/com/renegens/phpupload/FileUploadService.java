@@ -12,8 +12,6 @@ import retrofit.mime.TypedFile;
  */
 public interface FileUploadService {
 
-    //String BASE_URL = "http://79.170.40.244/";
-
     @Multipart
     @POST("/strayanimals.net/upload.php")
     void upload(@Part("myfile") TypedFile file,

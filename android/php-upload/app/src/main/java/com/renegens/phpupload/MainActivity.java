@@ -3,33 +3,21 @@ package com.renegens.phpupload;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Environment;
-import android.provider.MediaStore;
-import android.provider.Settings;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.text.LoginFilter;
 import android.util.Log;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageView;
 
 import com.desmond.squarecamera.CameraActivity;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.IOException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 
 import retrofit.Callback;
 import retrofit.RetrofitError;
@@ -39,12 +27,8 @@ import retrofit.mime.TypedFile;
 
 public class MainActivity extends AppCompatActivity {
 
-    static final int REQUEST_TAKE_PHOTO = 1;
     private static final int REQUEST_CAMERA = 0;
     private ImageView imageView;
-    private File photoFile;
-    private String mCurrentPhotoPath;
-
 
 
     @Override
@@ -61,11 +45,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
 
-                //dispatchTakePictureIntent();
-                //uploadFile();
                 requestForCameraPermission();
-
-
                 Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();
             }
@@ -84,7 +64,7 @@ public class MainActivity extends AppCompatActivity {
                 ActivityCompat.requestPermissions(MainActivity.this, new String[]{permission}, REQUEST_CAMERA);
             }
         } else {
-                startCameraActivity();
+            startCameraActivity();
         }
     }
 
@@ -94,115 +74,18 @@ public class MainActivity extends AppCompatActivity {
         startActivityForResult(startCustomCameraIntent, REQUEST_CAMERA);
     }
 
-        // Receive Uri of saved square photo
-        @Override
-        protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-            if (resultCode != RESULT_OK) return;
+    // Receive Uri of saved square photo
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (resultCode != RESULT_OK) return;
 
-            if (requestCode == REQUEST_CAMERA) {
-                Uri photoUri = data.getData();
-                File file = new File(photoUri.getPath());
-                uploadFile(file);
-            }
-            super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQUEST_CAMERA) {
+            Uri photoUri = data.getData();
+            File file = new File(photoUri.getPath());
+            uploadFile(file);
+            imageView.setImageURI(photoUri);
         }
-
-
-
-    private void dispatchTakePictureIntent() {
-
-        Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-        // Ensure that there's a camera activity to handle the intent
-        if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
-            // Create the File where the photo should go
-
-            try {
-                photoFile = createImageFile();
-            } catch (IOException ex) {
-                // Error occurred while creating the File
-                ex.printStackTrace();
-            }
-            // Continue only if the File was successfully created
-            if (photoFile != null) {
-                takePictureIntent.putExtra(android.provider.MediaStore.EXTRA_OUTPUT,
-                        Uri.fromFile(photoFile));
-                startActivityForResult(takePictureIntent, REQUEST_TAKE_PHOTO);
-            }
-        }
-    }
-
-    private File createImageFile() throws IOException {
-
-        // Create an image file name
-        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-        String imageFileName = "JPEG_" + timeStamp + "_";
-        File path = Environment.getExternalStoragePublicDirectory(
-                Environment.DIRECTORY_PICTURES);
-        File strayFolder = new File(path,"strayanimals");
-        strayFolder.mkdirs();
-        File image = File.createTempFile(
-                imageFileName,  /* prefix */
-                ".jpg",         /* suffix */
-                strayFolder      /* directory */
-        );
-
-        // Save a file: path for use with ACTION_VIEW intents
-        mCurrentPhotoPath = "file:" + image.getAbsolutePath();
-        //Log.i( "Absolut Path: ", mCurrentPhotoPath);
-        return image;
-    }
-
-    public void setReducedImageSize(){
-
-        int targetImageWidth = imageView.getWidth();
-        int targetImageHeight = imageView.getHeight();
-
-        BitmapFactory.Options bmpOptions = new BitmapFactory.Options();
-        bmpOptions.inJustDecodeBounds = true;
-        BitmapFactory.decodeFile(mCurrentPhotoPath, bmpOptions);
-        int cameraImageWidth = bmpOptions.outWidth;
-        int cameraImageHeight = bmpOptions.outHeight;
-
-
-    }
-
-
-
-/*    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data){
-
-
-        if (requestCode == REQUEST_TAKE_PHOTO && resultCode == RESULT_OK && data != null) {
-            uploadFile(photoFile);
-
-          try {
-                Bitmap bitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(),Uri.fromFile(photoFile));
-                imageView.setImageBitmap(bitmap);
-
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-
-    }*/
-
-    private void compressImage(File file){
-
-        Bitmap bitmap = BitmapFactory.decodeFile(mCurrentPhotoPath);
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        bitmap.compress(Bitmap.CompressFormat.JPEG, 70, bos);
-
-        try {
-            photoFile = createImageFile();
-        } catch (IOException ex) {
-            // Error occurred while creating the File
-            ex.printStackTrace();
-        }
-
-
-
-
-
+        super.onActivityResult(requestCode, resultCode, data);
     }
 
     private void uploadFile(File file) {
@@ -228,26 +111,4 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_main, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
-    }
 }
