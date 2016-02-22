@@ -1,1 +1,4 @@
-include ':app'
+include ':app', ':squarecamera'
+//, ':squarecamera'
+//include ':libraries:squarecamera'
+project(':squarecamera').projectDir = new File('libs/squarecamera')
